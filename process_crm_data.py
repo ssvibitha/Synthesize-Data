@@ -33,40 +33,42 @@ def process_data():
         # Ensure we only keep what the config asked for (simulating the usecols behavior)
         df = df[[c for c in config.COLUMNS_TO_KEEP if c in df.columns]]
 
+    df = df[df["Converted"] == "Yes"]
     print("Renaming columns...")
     # 2. Rename columns
     df = df.rename(columns=config.COLUMN_RENAMES)
-
+    
     print("Adding new features...")
+    df["ContactID"] = "C"+df.index.map(lambda x: f"{x+1:04d}")  # Example of adding a new feature: a unique account ID
     # 3. Add new features based on configuration
     num_rows = len(df)
     
     # Feature A: Combine names into a single column
     # (Assuming first_name and last_name were kept and not renamed)
-    if 'first_name' in df.columns and 'last_name' in df.columns:
-        df['full_name'] = df['first_name'] + ' ' + df['last_name']
+    # if 'first_name' in df.columns and 'last_name' in df.columns:
+    #     df['full_name'] = df['first_name'] + ' ' + df['last_name']
     
     # Feature B: Constant field
-    df['currency'] = config.DEFAULT_CURRENCY
+    # df['currency'] = config.DEFAULT_CURRENCY
 
     # Feature C: Random categorical assignment (e.g., segment)
-    df['customer_segment'] = np.random.choice(
-        config.CUSTOMER_SEGMENTS, 
-        size=num_rows, 
-        p=config.SEGMENT_PROBABILITIES
-    )
+    # df['customer_segment'] = np.random.choice(
+    #     config.CUSTOMER_SEGMENTS, 
+    #     size=num_rows, 
+    #     p=config.SEGMENT_PROBABILITIES
+    # )
 
     # Feature D: Random dates within a range
-    df['enrollment_date'] = generate_random_dates(
-        config.ENROLLMENT_START_DATE, 
-        config.ENROLLMENT_END_DATE, 
-        num_rows
-    )
+    # df['enrollment_date'] = generate_random_dates(
+    #     config.ENROLLMENT_START_DATE, 
+    #     config.ENROLLMENT_END_DATE, 
+    #     num_rows
+    # )
 
     # Feature E: Conditional logic based on existing data
     # Example: If lifetime_value > 1000, they are VIP
-    if 'lifetime_value' in df.columns: # Note we check the new name because it was already renamed
-        df['is_vip'] = df['lifetime_value'] > 1000
+    # if 'lifetime_value' in df.columns: # Note we check the new name because it was already renamed
+    #     df['is_vip'] = df['lifetime_value'] > 1000
 
     print("Cleaning up...")
     # 4. Drop columns that are no longer needed

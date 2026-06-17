@@ -3,27 +3,24 @@ Configuration file for CRM data generation and transformation.
 """
 
 # File paths
-INPUT_FILE = "input_crm_data.csv"   # Replace with your Kaggle dataset filename
-OUTPUT_FILE = "tailored_crm_data.csv"
+INPUT_FILE = "leads_withconverted.csv"   # Replace with your Kaggle dataset filename
+OUTPUT_FILE = "contacts.csv"
 
 # 1. Columns to keep exactly as they are (before renaming)
 # Only these columns will be loaded from the original dataset initially
 COLUMNS_TO_KEEP = [
-    "id",
-    "first_name",
-    "last_name",
-    "email",
-    "country",
-    "status",
-    "amount"
+    "LeadID",
+    "Last Name",
+    "Phone",
+    "Email",
+    "Converted"
 ]
 
 # 2. Rename columns
 # Format: {'old_name': 'new_name'}
 COLUMN_RENAMES = {
-    "id": "customer_id",
-    "amount": "lifetime_value",
-    "status": "account_status"
+    "Company": "Account Name",
+    "Last Name": "Contact Name"
 }
 
 # 3. New Features Generation Rules
@@ -42,6 +39,6 @@ ENROLLMENT_END_DATE = "2023-12-31"
 
 # 4. Columns to drop at the very end (e.g., intermediate columns you used to build new ones)
 COLUMNS_TO_DROP = [
-    "first_name", 
-    "last_name"
+    "LeadID",
+    "Converted"  # Assuming we don't want to keep the original conversion status in the final dataset
 ]
