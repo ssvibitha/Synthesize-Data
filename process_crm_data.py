@@ -42,6 +42,7 @@ def process_data():
     df["ContactID"] = "C"+df.index.map(lambda x: f"{x+1:04d}")  # Example of adding a new feature: a unique account ID
     # 3. Add new features based on configuration
     num_rows = len(df)
+
     
     # Feature A: Combine names into a single column
     # (Assuming first_name and last_name were kept and not renamed)
