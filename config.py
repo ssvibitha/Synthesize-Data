@@ -13,7 +13,8 @@ COLUMNS_TO_KEEP = [
     "Last Name",
     "Phone",
     "Email",
-    "Converted"
+    "Converted",
+    "Company"
 ]
 
 # 2. Rename columns
