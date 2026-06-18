@@ -4,7 +4,7 @@ Configuration file for CRM data generation and transformation.
 
 # File paths
 INPUT_FILE = "leads_withconverted.csv"   # Replace with your Kaggle dataset filename
-OUTPUT_FILE = "contacts.csv"
+OUTPUT_FILE = ".csv"
 
 # 1. Columns to keep exactly as they are (before renaming)
 # Only these columns will be loaded from the original dataset initially
