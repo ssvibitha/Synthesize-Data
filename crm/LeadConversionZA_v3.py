@@ -29,7 +29,7 @@ class MLModel:
 
     def fit(self):
         training_data_table_name = "ML_Query_Table"
-        columns = ["Converted", "l.Industry", "l.Lead Source", "Lead_ID", "NumberOfCalls", 
+        columns = ["Converted","Lead_Industry" , "Lead_Source", "Lead_ID", "NumberOfCalls", 
             "NumberOfMeetings", "NumberOfTasks", "Member_Status", "Campaign_Name"]
         target_column = "Converted"
         model_name = 'lead_conversion_pred_models'
@@ -41,7 +41,7 @@ class MLModel:
         
         # Fill missing categories before encoding
         label_encoders = {}
-        for column in ["l.Industry", "l.Lead Source", "Member_Status", "Campaign_Name"]:
+        for column in ["Lead_Industry", "Lead_Source", "Member_Status", "Campaign_Name"]:
             data[column] = data[column].fillna("Unknown").astype(str)
             le = LabelEncoder()
             data[column] = le.fit_transform(data[column])
@@ -109,7 +109,7 @@ class MLModel:
 
     def predict(self):
         training_data_table_name = "ML_Query_Table"
-        columns = ["Converted", "l.Industry", "l.Lead Source", "Lead_ID", "NumberOfCalls", "NumberOfMeetings", 
+        columns = ["Converted", "Lead_Industry", "Lead_Source", "Lead_ID", "NumberOfCalls", "NumberOfMeetings", 
         "NumberOfTasks", "Member_Status", "Campaign_Name"]
         target_column = "Converted"
         model_name = 'lead_conversion_pred_models'
