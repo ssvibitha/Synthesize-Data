@@ -1,6 +1,7 @@
 # Lead conversion prediction v1
 # XGBoost 
 # using columns lead_source, industry, no. of followups, built in score
+# Works in zoho analytics code studio 
 
 from DataTransformationUtil import DataTransformationUtil
 from ZohoAnalytics import ZohoAnalytics
