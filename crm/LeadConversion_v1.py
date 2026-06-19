@@ -1,140 +1,110 @@
-# Lead conversion prediction v1
-# XGBoost 
-# using columns lead_source, industry, no. of followups, built in score
-# Works in zoho analytics code studio 
+# Lead Conversion Prediction
+# XGBoost
+# For local machine
+# Using lead_source, industry, no. of followups, built-in score
 
-from DataTransformationUtil import DataTransformationUtil
-from ZohoAnalytics import ZohoAnalytics
-from ModelStorage import ModelStorage
+import pandas as pd
+from xgboost import XGBClassifier
 import joblib
 import os
-from pandas import DataFrame
-import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-import xgboost as xgb
-from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score
+
+class LocalLogger:
+    def INFO(self, msg):
+        print(f"[INFO] {msg}")
+    def ERROR(self, msg):
+        print(f"[ERROR] {msg}")
 
 class MLModel:
-    dt: DataTransformationUtil = None
-    za: ZohoAnalytics = None
-    ms: ModelStorage = None
-
-    def __init__(self, za, ms):
-        self.za = za
-        self.dt = DataTransformationUtil(self.za)
-        self.log = self.za.context.log
-        self.ms = ms
+    def __init__(self):
+        self.log = LocalLogger()
+        # Paths relative to the script directory
+        self.script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.csv_path = os.path.join(self.script_dir, "leads (1).csv")
+        self.model_dir = os.path.join(self.script_dir, "models")
+        self.model_path = os.path.join(self.model_dir, "lead_model.pkl")
+        self.predictions_path = os.path.join(self.script_dir, "lead_predictions.csv")
 
     def fit(self):
-        training_data_table_name = "Leads"
-        columns = ["company", "followups", "industry", "isConverted", "lead_id",
-                   "mobile", "name", "score", "source", "website"]
-        target_column = "isConverted"
-        model_name = 'lead_conversion_prediction_model'
-        resultant_column_name = 'Prediction'
-        non_feature_columns = ["company", "lead_id", "mobile", "name", "website"]
+        try:
+            self.log.INFO("In fit function")
+            print("Entered fit function")
+        
+            # Load from local CSV instead of Zoho Analytics
+            self.log.INFO(f"Reading lead data from: {self.csv_path}")
+            lead_data = pd.read_csv(self.csv_path)
 
-        data: pd.DataFrame = self.dt.fetch_tabledata_as_DataFrame(training_data_table_name, columns, "")
+            X = lead_data[["source", "industry", "score", "followups"]]
 
-        data["isConverted"] = data["isConverted"].map({
-            "Yes": 1,
-            "No": 0
-        })
-        data = data.dropna(subset=["isConverted"])
-        # Fill missing categories before encoding so LabelEncoder never sees NaN
-        label_encoders = {}
-        for column in ["industry", "source"]:
-            data[column] = data[column].fillna("Unknown").astype(str)
-            le = LabelEncoder()
-            data[column] = le.fit_transform(data[column])
-            label_encoders[column] = le
+            X["score"] = pd.to_numeric(X["score"], errors="coerce")
+            X["followups"] = pd.to_numeric(X["followups"], errors="coerce")
+            X = X.fillna(0)
 
-        data.fillna(data.median(numeric_only=True), inplace=True)
+            y = lead_data["isConverted"].astype(str).str.strip().str.lower().map({
+                "yes": 1,
+                "no": 0
+            })
 
-        X = data.drop([target_column] + non_feature_columns, axis=1)
-        y = data[target_column]
+            X = pd.get_dummies(X, columns=["source", "industry"])
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Split data into training and testing sets
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            model = XGBClassifier(n_estimators=100, learning_rate=0.1, max_depth=4, random_state=42)
+            model.fit(X_train, y_train)
 
-        # train XGBoost model
-        model = xgb.XGBClassifier()
-        model.fit(X_train, y_train)
+            preds = model.predict(X_test)
+            acc = accuracy_score(y_test, preds)
 
-        # Make predictions
-        y_pred = model.predict(X_test)
+            self.log.INFO("Accuracy = " + str(acc))
+            os.makedirs(self.model_dir, exist_ok=True)
 
-        output = pd.DataFrame({resultant_column_name: y_pred})
-        self.log.INFO(output)
+            joblib.dump(model, self.model_path)
+            self.log.INFO(f"Saved model locally to: {self.model_path}")
+            self.log.INFO("Training Completed")
 
-        # Evaluate the model
-        print(classification_report(y_test, y_pred))
-
-        # Save Trained Model
-        directory = 'models'
-        os.makedirs(directory, exist_ok=True)
-
-        # Bundle the model together with the label encoders so that prediction
-        artifact = {
-            'model': model,
-            'encoders': label_encoders,
-            'feature_columns': list(X.columns),
-        }
-        model_path = os.path.join(directory, model_name + '.pkl')
-        joblib.dump(artifact, model_path)
-
-        self.ms.store_model(model_name, model_path)
-
-        self.log.INFO("Training Completed...Proceed to Predict")
+        except Exception as e:
+            self.log.ERROR("TRAINING FAILED: " + str(e))
+            print("FULL ERROR:", str(e))
+            raise e
 
     def predict(self):
-        # Path to the 'models' directory
-        training_data_table_name = "Leads1"
-        columns = ["company", "followups", "industry", "isConverted", "lead_id",
-                   "mobile", "name", "score", "source", "website"]
-        target_column = "isConverted"
-        model_name = 'lead_conversion_prediction_model'
-        resultant_column_name = 'Prediction'
-        resultant_table_name = "lead_conversion_predictions"
-        import_type = "truncateadd"
-        non_feature_columns = ["company", "lead_id", "mobile", "name", "website"]
+        try:
+            self.log.INFO(f"Loading model from: {self.model_path}")
+            model = joblib.load(self.model_path)
+            
+            # Load from local CSV instead of Zoho Analytics
+            self.log.INFO(f"Reading new data for prediction from: {self.csv_path}")
+            new_data = pd.read_csv(self.csv_path)
 
-        # list models
-        self.ms.list_models()
+            X_new = new_data[["source", "industry", "score", "followups"]]
+            X_new = pd.get_dummies(X_new, columns=["source", "industry"])
+            X_train_cols = model.get_booster().feature_names
+            X_new = X_new.reindex(columns=X_train_cols, fill_value=0)
 
-        # Load the model + the encoders that were fit during training
-        model_path = self.ms.get_model_path(model_name)
-        artifact = joblib.load(model_path)
-        model = artifact['model']
-        label_encoders = artifact['encoders']
-        feature_columns = artifact['feature_columns']
+            pred_class = model.predict(X_new)
+            pred_prob = model.predict_proba(X_new)[:, 1]
 
-        new_data: pd.DataFrame = self.dt.fetch_tabledata_as_DataFrame(training_data_table_name, columns, "")
+            output = pd.DataFrame({
+                "lead_id": new_data["lead_id"],
+                "isConverted_Predicted": pred_class,
+                "Conversion_Probability_%": pred_prob * 100
+            })
 
-        # Keep the lead_id around for the output table before it gets dropped as a feature
-        lead_ids = new_data["lead_id"]
+            # Save locally instead of uploading to Zoho Analytics
+            output.to_csv(self.predictions_path, index=False)
+            self.log.INFO(f"Saved predictions locally to: {self.predictions_path}")
 
-        for column, le in label_encoders.items():
-            if column in new_data.columns:
-                new_data[column] = new_data[column].fillna("Unknown").astype(str)
-                # Map any category never seen during training to the encoder's first class
-                unseen_mask = ~new_data[column].isin(le.classes_)
-                if unseen_mask.any():
-                    new_data.loc[unseen_mask, column] = le.classes_[0]
-                new_data[column] = le.transform(new_data[column])
+            self.log.INFO("Prediction Completed")
+            print("Prediction Completed Successfully")
+        except Exception as e:
+            self.log.ERROR("PREDICTION FAILED: " + str(e))
+            print("PREDICTION ERROR:", str(e))
+            raise e
 
-        # Handle missing values the same way training did
-        new_data.fillna(new_data.median(numeric_only=True), inplace=True)
-
-        # Drop the same non-feature columns (and target) that were dropped during training,
-        # so the columns fed to the model line up with what it was trained on.
-        X_new = new_data.drop([target_column] + non_feature_columns, axis=1, errors="ignore")
-        X_new = X_new[feature_columns]
-
-        # Predict conversion probability using the trained model
-        y_pred_new = model.predict_proba(X_new)[:, 1]
-
-        output = pd.DataFrame({'lead_id': lead_ids, resultant_column_name: (y_pred_new * 100).round(2).astype("float64")})
-
-        self.dt.upload_tabledata_from_DataFrame(resultant_table_name, output, {"importType": import_type})
+if __name__ == "__main__":
+    ml_pipeline = MLModel()
+    
+    print("Starting ML pipeline execution")
+    ml_pipeline.fit()
+    print("\n--- Training finished. Starting predictions ---")
+    ml_pipeline.predict()
