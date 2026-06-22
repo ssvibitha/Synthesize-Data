@@ -2,12 +2,13 @@
 Configuration file for CRM data generation (Tasks, Meetings, Calls).
 """
 
-INPUT_FILE = "data/tasks_contacts.csv"
+INPUT_FILE = "data/tasks_9000.csv"
+# INPUT_FILE = "data/new_leads.csv"
 
 # Output files
-# TASKS_OUTPUT_FILE = "data/tasks_contacts.csv"
-MEETINGS_OUTPUT_FILE = "data/meeting_contacts.csv"
-CALLS_OUTPUT_FILE = "data/calls_contacts.csv"
+# TASKS_OUTPUT_FILE = "data/tasks_9000.csv"
+MEETINGS_OUTPUT_FILE = "data/meeting_9000.csv"
+CALLS_OUTPUT_FILE = "data/calls_9000.csv"
 
 # Configuration for Tasks
 # TASK_STATUSES = ["Not Started", "Deferred", "In Progress", "Completed", "Waiting for input"]
@@ -19,7 +20,7 @@ MEETING_VENUES = ["Client location", "In-office"]
 MEETING_TITLES = ["Initial Discovery Call", "Product Demo", "Technical Deep Dive", "Pricing Discussion", "Contract Negotiation"]
 
 # Configuration for Calls
-CALL_TYPES = ["Outbound", "Inbound", "Missed"]
+CALL_TYPES = ["Outbound", "Inbound"]
 CALL_SUBJECTS = ["Cold Outreach", "Follow-up", "Support Inquiry", "Billing Question", "Check-in"]
 
 # Baseline date to use (since random dates are disabled, we generate structured sequential dates)
