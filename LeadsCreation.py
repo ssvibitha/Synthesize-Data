@@ -6,9 +6,9 @@ import os
 fake = Faker()
 
 num_records = 9000
-file_path = "leads.csv"
-contacts_path = "contacts.csv"
-accounts_path = "accounts.csv"
+file_path = "data/leads.csv"
+contacts_path = "data/contacts.csv"
+accounts_path = "data/accounts.csv"
 
 sources = [
     "Website",
@@ -168,8 +168,8 @@ while generated_count < num_records:
     isConverted = "Yes" if conversion_score >= 50 else "No"
 
     rows.append([
-        lead_id, firstname, lastname, name, email, mobile, company,
-        website, source, industry, followups, score, isConverted
+        lead_id, name, email, mobile, company,
+        website, source, industry, isConverted
     ])
     
     # If the lead is converted, add them to contacts and accounts
@@ -194,8 +194,8 @@ while generated_count < num_records:
 new_df = pd.DataFrame(
     rows,
     columns=[
-        "lead_id", "firstname", "lastname", "name", "email", "mobile", 
-        "company", "website", "source", "industry", "followups", "score", "isConverted"
+        "lead_id", "name", "email", "mobile", 
+        "company", "website", "source", "industry", "isConverted"
     ]
 )
 
