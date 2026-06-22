@@ -31,30 +31,29 @@ def process_data():
     
     # Counters for sequential IDs
     # task_counter = 1
-    meeting_counter = 147
+    meeting_counter = 1
     call_counter = 1
     
     # Since "no random dates" was requested, we use a deterministic baseline date
     baseline_date = datetime.strptime(config.BASELINE_DATE, "%Y-%m-%d %H:%M:%S")
-
     for idx, row in df_leads.iterrows():
-        is_converted_str = str(row.get('Converted', '')).strip().lower()
-        is_converted = is_converted_str in ['yes', '1']
+        # is_converted_str = str(row.get('Converted', '')).strip().lower()
+        # is_converted = is_converted_str in ['yes', '1']
         
         # company = row.get('company', '')
         # last_name = row.get('last name', '')
         
         # Determine ID based on conversion status
         # We try to fetch 'contactid' or 'leadid', falling back to 'id', or generating one if missing.
-        acc_id = df_leads.at[idx, 'Account ID']
-        task = df_leads.at[idx, 'Subject']
+        lead_id = df_leads.at[idx, 'Lead ID']
+        task = df_leads.at[idx, 'Subject'] # When generating meetings and calls only
         # Determine counts based on rules
         # if is_converted:
-        #     num_tasks = random.randint(2, 4)
-        #     continue  # Skip generating tasks for converted leads as per the new requirement
+        #     num_tasks = random.randint(1, 4)
+        #     # continue  # Skip generating tasks for converted leads as per the new requirement
         # else:
-        #     continue  # Skip generating tasks for unconverted leads as per the new requirement
-        #     # num_tasks = random.randint(0, 2)
+        #     # continue  # Skip generating tasks for unconverted leads as per the new requirement
+        #     num_tasks = random.randint(0, 2)
             
         # Generate Tasks
         # fields: subject, due date, status, account name, last name, task id
@@ -67,7 +66,7 @@ def process_data():
         #         "Due Date": due_date.strftime("%d-%m-%Y"),
         #         "Status": random.choice(config.TASK_STATUSES),
         #         "Priority": random.choice(config.TASK_PRIORITIES),
-        #         "Account ID": acc_id
+        #         "Lead ID": lead_id
         #     })
         #     task_counter += 1
             
@@ -84,7 +83,7 @@ def process_data():
                 "Meeting Venue": random.choice(config.MEETING_VENUES),
                 "From": start_time.strftime("%d-%m-%Y %I:%M %p"),
                 "To": end_time.strftime("%d-%m-%Y %I:%M %p"),
-                "Account ID": acc_id,
+                "Lead ID": lead_id,
                 "Meeting ID": meeting_counter
             })
             meeting_counter += 1
@@ -98,15 +97,15 @@ def process_data():
                 "Start Time": start_time.strftime("%d-%m-%Y %I:%M %p"),
                 "Duration": duration_mins,
                 "Subject": random.choice(config.CALL_SUBJECTS),
-                "Account ID": acc_id,
+                "Lead ID": lead_id,
                 "Call ID": call_counter
             })
             call_counter += 1
 
     # Save to CSVs. We ensure empty dataframes are created with columns if no records generated
-    # df_tasks = pd.DataFrame(tasks, columns=["Task ID","Subject", "Due Date", "Status", "Priority", "Account ID"])
-    df_meetings = pd.DataFrame(meetings, columns=["Title", "Meeting Venue", "From", "To", "Account ID", "Meeting ID"])
-    df_calls = pd.DataFrame(calls, columns=["Call Type", "Start Time", "Duration", "Subject", "Account ID", "Call ID"])
+    # df_tasks = pd.DataFrame(tasks, columns=["Task ID","Subject", "Due Date", "Status", "Priority", "Lead ID"])
+    df_meetings = pd.DataFrame(meetings, columns=["Title", "Meeting Venue", "From", "To", "Lead ID", "Meeting ID"])
+    df_calls = pd.DataFrame(calls, columns=["Call Type", "Start Time", "Duration", "Subject", "Lead ID", "Call ID"])
     
     # print(f"Generated {len(df_tasks)} tasks, saving to {config.TASKS_OUTPUT_FILE}...")
     # df_tasks.to_csv(config.TASKS_OUTPUT_FILE, index=False)
