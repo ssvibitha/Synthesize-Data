@@ -2,16 +2,14 @@
 import pandas as pd
 
 df_src = pd.read_csv('data/Leads_exports.csv')
-df_dest= pd.read_csv('new_contacts.csv')
+df_dest= pd.read_csv('data/new_leads.csv')
 
 
-df_dest['Lead Id'] = df_dest['Account Name'].map(
+df_dest['Record Id'] = df_dest['company'].map(
     df_src.set_index('Company')['Record Id']
 )
-df_dest = df_dest.drop("Account Id",axis=1)
-df_dest.to_csv("contacts_9000.csv", index=False)
+df_dest.to_csv("new_leads1.csv", index=False)
 print(df_dest.columns)
-print(df_dest["Lead Id"].value_counts().sum())
 
 # df=pd.read_csv("new_leads_cleaned.csv")
 # unique_name = df["name"].value_counts().sum() #9000
