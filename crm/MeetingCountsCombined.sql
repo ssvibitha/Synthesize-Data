@@ -1,3 +1,5 @@
+--Combining meeting(crm data - for 1k records) and meeting_9000
+
 SELECT
 		 x.Activity_Link_ID AS Activity_Link_ID,
 		 SUM(x.NumberOfCalls) AS NumberOfMeetings

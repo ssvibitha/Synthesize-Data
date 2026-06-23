@@ -1,5 +1,6 @@
 -- CombinedTasks_Count - Query Table
--- For 10,000 records
+-- For 10k records
+--Combining tasks(crm data - for 1k records) and tasks_9000
 
 SELECT
     x.Activity_Link_ID AS Activity_Link_ID,

@@ -1,3 +1,5 @@
+--Combining Calls(crm data - for 1k records) and calls_9000
+
 SELECT
 		 x.Activity_Link_ID AS Activity_Link_ID,
 		 SUM(x.NumberOfCalls) AS NumberOfCalls
