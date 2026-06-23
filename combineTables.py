@@ -1,3 +1,6 @@
+# Select common columns to merge from table1 and table2 and create a new table
+# (vertical stacking of 2 tables)
+
 import pandas as pd
 
 # 1. Define the columns you want to select from each CSV

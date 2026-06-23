@@ -1,3 +1,5 @@
+# Create campaign_members.csv to map each lead to a campaign along with member status
+
 import pandas as pd
 import random 
 df = pd.read_csv("data/Leads_exports.csv")

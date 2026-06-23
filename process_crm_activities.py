@@ -1,3 +1,5 @@
+# Create tasks.csv, meeting.csv, calls.csv using cofig_activites
+
 import pandas as pd
 import random
 import uuid

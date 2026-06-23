@@ -1,4 +1,4 @@
-#Add account ID in contacts.csv
+# Add column from src to dest based on a common field
 import pandas as pd
 
 df_src = pd.read_csv('data/Accounts_exports.csv')
@@ -11,6 +11,7 @@ df_dest.to_csv("contacts_9.csv", index=False)
 print(df_dest.columns)
 
 # Use when some records are Nan in mapping column
+# In df_src, some rows have NaN in column 'Account Id'
 # mapping = (
 #     df_src
 #     .dropna(subset=['Account Id'])
