@@ -56,10 +56,9 @@ class MLModel:
         data.fillna(data.median(numeric_only=True), inplace=True)
 
         X = data.drop([target_column] + non_feature_columns, axis=1)
-        self.log.INFO(X.dtypes.to_string())
         y = data[target_column]
 
-        # Split data into training and testing sets, added stratify=y to preserve data distribution
+        # Split data into training and testing sets, stratify=y to preserve data distribution
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
         dt_param_grid = {
