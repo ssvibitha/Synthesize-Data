@@ -38,6 +38,7 @@ class MLModel:
         target_column = "Converted"
         model_name = 'lead_conversion_pred_models'
         non_feature_columns = ["Lead_ID"]
+        
         categorical_col=["Lead_Industry", "Lead_Source", "Member_Status", "Campaign_Name"]
         
         data: pd.DataFrame = self.dt.fetch_tabledata_as_DataFrame(training_data_table_name, columns, "")
