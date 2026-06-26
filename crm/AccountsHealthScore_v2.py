@@ -1,6 +1,7 @@
 # Without Using Historical dataset
-# PCA
+# Kmeans
 
+import importlib
 from DataTransformationUtil import DataTransformationUtil
 from ZohoAnalytics import ZohoAnalytics
 from ModelStorage import ModelStorage
@@ -28,21 +29,30 @@ class MLModel:
         feature_columns = ["InvoiceAmount","OpenCasesPercent","OverduePercent","Invoice Count",
         "NumCaseEscalation","EscalationRate","AvgResolutionTime"]
         data: pd.DataFrame = self.dt.fetch_tabledata_as_DataFrame(training_data_table_name, [], "")
-
+        pca_weights={
+            "InvoiceAmount":1,
+            "OpenCasesPercent":2,
+            "OverduePercent":2,
+            "Invoice Count":1,
+            "NumCaseEscalation":2,
+            "EscalationRate":2,
+            "AvgResolutionTime":2
+        }
         X = data[feature_columns].copy()
         X = X.fillna(X.median(numeric_only=True))
+
         scaler = MinMaxScaler()
         X = scaler.fit_transform(X)
+        X = pd.DataFrame(X,columns=feature_columns)
 
-        X= pd.DataFrame(X,columns=feature_columns)
+        for col, weight in pca_weights.items():
+            X[col] = X[col] * weight    
         pca = PCA()
         pca.fit(X)
 
         loadings= np.abs(pca.components_)
         importance = np.dot(pca.explained_variance_ratio_ , loadings )
         importance = importance / importance.sum() *100
-
-        print(importance)
 
         directory = 'models'
         os.makedirs(directory, exist_ok=True)
@@ -56,7 +66,7 @@ class MLModel:
             'importance':importance_df
         }
         model_path = os.path.join(directory, model_name + '.pkl')
-        importance_df.to_csv("data/PCAFeatureImp.csv",index=False)
+        self.dt.upload_tabledata_from_DataFrame("PCAFeatureImportance", importance_df, {"importType": "truncateadd"})
         joblib.dump(artifact, model_path)
         self.ms.store_model(model_name, model_path)
         self.log.INFO("Training Completed")
@@ -67,7 +77,6 @@ class MLModel:
         resultant_table_name = "PCAaccountScores"
         id_col = "Account Id"
         negative_features = ["OpenCasesPercent","OverduePercent","NumCaseEscalation","EscalationRate","AvgResolutionTime"]
-
         import_type = "truncateadd"
 
         self.ms.list_models()
