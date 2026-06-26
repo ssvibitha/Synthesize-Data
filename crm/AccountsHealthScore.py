@@ -1,3 +1,6 @@
+# Using Historical dataset, target variable = churn
+# Logistic regression, random forest, XGBoost   
+
 from DataTransformationUtil import DataTransformationUtil
 from ZohoAnalytics import ZohoAnalytics
 from ModelStorage import ModelStorage
@@ -43,7 +46,10 @@ class MLModel:
         y = data[target_column]
         
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-        
+
+        # Save evalutation metrics to a separate CSV file
+        rows=[]
+
         logR_param_grid = {
             'penalty': ['l1', 'l2'],
             'C': [0.01, 0.1, 1, 10, 100],
@@ -124,7 +130,14 @@ class MLModel:
             # 4. f1 Score
             f1 = f1_score(y_test, y_pred)
             self.log.INFO(f"f1 Score: {f1:.4f}")
-            
+
+            rows.append({
+                "Model Name":model_name,
+                "Accuracy": acc,
+                "ROC_AUC":roc,
+                "f1 Score":f1
+            })
+
             # 5. Feature Importance
             if hasattr(best_model, 'feature_importances_'):
                 importances = best_model.feature_importances_
@@ -143,6 +156,9 @@ class MLModel:
                 best_overall_model = best_model
                 best_overall_name = name
                 best_overall_importances = importances
+
+        eval_df=pd.DataFrame(rows)
+        self.dt.upload_tabledata_from_DataFrame("ModelEvaluation", eval_df, {"importType": "truncateadd"})
         self.log.INFO(f"Selected Best Model: {best_overall_name} with ROC-AUC score {best_overall_score:.4f}")
         
         directory = 'models'
@@ -162,7 +178,7 @@ class MLModel:
     def predict(self):
         training_data_table_name = "AccountQueryTable.csv"
         model_name = 'account_health_score'
-        resultant_table_name = "AccountScores.csv"
+        resultant_table_name = "AccountScores"
         id_col = "Account Id"
 
         import_type = "truncateadd"
