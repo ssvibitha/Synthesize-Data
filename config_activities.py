@@ -2,11 +2,11 @@
 Configuration file for CRM data generation (Tasks, Meetings, Calls).
 """
 import datetime
-INPUT_FILE = "data/sales_orders.csv"
+INPUT_FILE = "data/Invoices_new.csv"
 # INPUT_FILE = "data/new_leads.csv"
 
 # Output files
-OUTPUT_FILE = "data/cases.csv"
+OUTPUT_FILE = "data/Invoices_new.csv"
 # TASKS_OUTPUT_FILE = "data/tasks_9000.csv"
 # MEETINGS_OUTPUT_FILE = "data/meeting_9000.csv"
 # CALLS_OUTPUT_FILE = "data/calls_9000.csv"

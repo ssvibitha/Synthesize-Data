@@ -45,9 +45,10 @@ class MLModel:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
         
         logR_param_grid = {
-            'penalty': ['l1', 'l2'],
+            'penalty': ['elasticnet'],
+            'l1_ratio': [0.0, 0.5, 1.0],
             'C': [0.01, 0.1, 1, 10, 100],
-            'solver': ['liblinear', 'saga']
+            'solver': ['saga']
         }
         logR_grid = GridSearchCV(
             LogisticRegression(random_state=42, max_iter=1000),
@@ -127,11 +128,16 @@ class MLModel:
             # 5. Feature Importance
             if hasattr(best_model, 'feature_importances_'):
                 importances = best_model.feature_importances_
-                feature_imp_df = pd.DataFrame({
-                    'Feature': X.columns, 
-                    'Importance': importances*100
-                }).sort_values(by='Importance', ascending=False)
-                self.log.INFO(f"Feature Importances:\n{feature_imp_df.to_string(index=False)}")
+            elif hasattr(best_model, 'coef_'):
+                importances = np.abs(best_model.coef_[0])
+            else:
+                importances = np.zeros(len(X.columns))
+                
+            feature_imp_df = pd.DataFrame({
+                'Feature': X.columns, 
+                'Importance': importances*100
+            }).sort_values(by='Importance', ascending=False)
+            self.log.INFO(f"Feature Importances:\n{feature_imp_df.to_string(index=False)}")
                 
             self.log.INFO("-" * 30)
             
@@ -147,6 +153,7 @@ class MLModel:
         artifact = {
             'model': best_overall_model,
             'model_name': best_overall_name,
+            'scaler':scaler,
             'feature_columns': feature_columns,
             'feature_importances': best_overall_importances,
         }
@@ -169,11 +176,11 @@ class MLModel:
         model = artifact['model']
         feature_columns = artifact['feature_columns']
         feature_importances = artifact['feature_importances']
+        scaler = artifact['scaler']
         new_data: pd.DataFrame = self.dt.fetch_tabledata_as_DataFrame(training_data_table_name, [], "")
         acc_ids = new_data[id_col]
         new_data.fillna(new_data.median(numeric_only=True), inplace=True)
 
-        scaler = MinMaxScaler()
 
         X_new = pd.DataFrame()
 
@@ -183,15 +190,19 @@ class MLModel:
             else:
                 X_new[col] = 0
 
-        X_new = scaler.fit_transform(X_new)
+        X_new = scaler.transform(X_new)
         X_new= pd.DataFrame(X_new,columns=feature_columns)
 
         output = pd.DataFrame({'Account Id': acc_ids})
         proba_churn = model.predict_proba(X_new)[:, 1]
         output["score"] = np.round(100 * (1 - proba_churn), 2)
         
-        explainer = shap.TreeExplainer(model)
-        shap_values = explainer.shap_values(X_new)
+        if hasattr(model, 'coef_'):
+            explainer = shap.LinearExplainer(model, X_new)
+            shap_values = explainer.shap_values(X_new)
+        else:
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer.shap_values(X_new)
 
         self.dt.upload_tabledata_from_DataFrame(resultant_table_name, output, {"importType": import_type})
         self.log.INFO("Prediction Completed")
