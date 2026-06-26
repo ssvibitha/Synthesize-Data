@@ -1,14 +1,20 @@
 SELECT
-		 c."Account Id" AS "Account Id",
-		 c."OpenPercent" AS "OpenPercent",
-		 i."InvoiceCount" AS "InvoiceCount",
+		 a."Id" AS "Account Id",
 		 i."InvoiceAmount" AS "InvoiceAmount",
-		 i."OverduePercent" AS "OverduePercent"
+		 c."OpenPercent" AS "OpenCasesPercent",
+		 i."OverduePercent" AS "OverduePercent",
+		 i."InvoiceCount" AS "Invoice Count",
+		 c."NumCaseEscalation" AS "NumCaseEscalation",
+		 c."EscalataionRate" AS "EscalataionRate",
+		 c."AvgResolutionTime" AS "AvgResolutionTime"
 FROM (	SELECT
 			 "Account Id",
 			 COUNT(CASE
-					 WHEN "Status"  = 'Open' THEN 1
-				 END) * 100.0 / COUNT("Case Id") AS "OpenPercent"
+					 WHEN "Status"  = 'Active' THEN 1
+				 END) * 100.0 / COUNT("Case Id") AS "OpenPercent",
+			 SUM("Case Escalation") AS "NumCaseEscalation",
+			 SUM("Case Escalation") * 1.0 / COUNT("Case Id") AS "EscalataionRate",
+			 AVG("ResolvedInDays") AS "AvgResolutionTime"
 	FROM  "Cases" 
 	GROUP BY  "Account Id" 
 ) c
@@ -21,4 +27,5 @@ LEFT JOIN(	SELECT
 				 END) * 100.0 / COUNT("Invoice Id") AS "OverduePercent"
 	FROM  "Invoices" 
 	GROUP BY  "Account Id" 
-) i ON i."Account Id"  = c."Account Id"  
+) i ON i."Account Id"  = c."Account Id" 
+RIGHT JOIN "Accounts" a ON a."Id"  = REPLACE(c."Account Id", 'zcrm_', '')  
