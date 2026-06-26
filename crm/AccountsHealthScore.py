@@ -24,7 +24,7 @@ class MLModel:
         self.log = self.za.context.log
         self.ms = ms
     def fit(self):
-        training_data_table_name = "AccountHistorical.csv"
+        training_data_table_name = "newAccHist.csv"
         model_name = 'account_health_score'
         target_column = "Churn"
         non_feature_columns = ["Account Id"]
@@ -45,16 +45,15 @@ class MLModel:
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
         
         logR_param_grid = {
-            'penalty': ['elasticnet'],
-            'l1_ratio': [0.0, 0.5, 1.0],
+            'penalty': ['l1', 'l2'],
             'C': [0.01, 0.1, 1, 10, 100],
-            'solver': ['saga']
+            'solver': ['liblinear', 'saga']
         }
         logR_grid = GridSearchCV(
             LogisticRegression(random_state=42, max_iter=1000),
             logR_param_grid,
             cv=5,
-            scoring='roc_auc',
+            scoring='f1',
             n_jobs=-1,
             return_train_score=True
         )
@@ -68,7 +67,7 @@ class MLModel:
             RandomForestClassifier(random_state=42),
             rf_param_grid,
             cv=5,
-            scoring='roc_auc',
+            scoring='f1',
             n_jobs=-1,
             return_train_score=True
         )
@@ -86,7 +85,7 @@ class MLModel:
             ),
             xgb_param_grid,
             cv=5,
-            scoring='roc_auc',
+            scoring='f1',
             n_jobs=-1,
             return_train_score=True
         )
@@ -115,6 +114,7 @@ class MLModel:
 
             # 3. ROC-AUC Score in case the model predicts either 0 or 1
             y_prob = best_model.predict_proba(X_test)[:, 1]
+            roc = 0
             try:
                 roc = roc_auc_score(y_test, y_prob)
                 self.log.INFO(f"ROC-AUC score: {roc:.4f}")
@@ -128,17 +128,14 @@ class MLModel:
             # 5. Feature Importance
             if hasattr(best_model, 'feature_importances_'):
                 importances = best_model.feature_importances_
-            elif hasattr(best_model, 'coef_'):
-                importances = np.abs(best_model.coef_[0])
             else:
-                importances = np.zeros(len(X.columns))
-                
+                importances = np.abs(best_model.coef_[0])
             feature_imp_df = pd.DataFrame({
                 'Feature': X.columns, 
                 'Importance': importances*100
             }).sort_values(by='Importance', ascending=False)
             self.log.INFO(f"Feature Importances:\n{feature_imp_df.to_string(index=False)}")
-                
+
             self.log.INFO("-" * 30)
             
             if roc > best_overall_score:
@@ -155,7 +152,7 @@ class MLModel:
             'model_name': best_overall_name,
             'scaler':scaler,
             'feature_columns': feature_columns,
-            'feature_importances': best_overall_importances,
+            'feature_importances': feature_imp_df,
         }
         model_path = os.path.join(directory, model_name + '.pkl')
         joblib.dump(artifact, model_path)
@@ -173,6 +170,7 @@ class MLModel:
         self.ms.list_models()
         model_path = self.ms.get_model_path(model_name)
         artifact = joblib.load(model_path)
+        model_name = artifact['model_name']
         model = artifact['model']
         feature_columns = artifact['feature_columns']
         feature_importances = artifact['feature_importances']
@@ -190,19 +188,48 @@ class MLModel:
             else:
                 X_new[col] = 0
 
-        X_new = scaler.transform(X_new)
+        X_new = scaler.fit_transform(X_new)
         X_new= pd.DataFrame(X_new,columns=feature_columns)
 
         output = pd.DataFrame({'Account Id': acc_ids})
         proba_churn = model.predict_proba(X_new)[:, 1]
         output["score"] = np.round(100 * (1 - proba_churn), 2)
         
-        if hasattr(model, 'coef_'):
+        if model_name == "Logistic Regression":
             explainer = shap.LinearExplainer(model, X_new)
             shap_values = explainer.shap_values(X_new)
         else:
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(X_new)
+        
+
+        if hasattr(shap_values, "values"):
+            shap_values = shap_values.values
+
+        if len(shap_values.shape) == 3:
+            shap_values = shap_values[:, :, 1]
+            
+        contrib_percent = []
+
+        for row in shap_values:
+            percent = np.abs(row)
+            total = percent.sum()
+
+            if total != 0:
+                percent = (percent / total) * 100
+            else:
+                percent = np.zeros_like(percent)
+
+            contrib_percent.append(percent)
+
+        contrib_df = pd.DataFrame(
+            contrib_percent,
+            columns=feature_columns
+        )
+
+        contrib_df = contrib_df.round(2)
+
+        output = pd.concat([output, contrib_df], axis=1)
 
         self.dt.upload_tabledata_from_DataFrame(resultant_table_name, output, {"importType": import_type})
         self.log.INFO("Prediction Completed")
